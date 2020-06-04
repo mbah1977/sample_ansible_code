@@ -1,0 +1,46 @@
+#!/bin/env python3
+
+#Import Python modulesimport json
+import requests
+import getpass
+
+
+def get_server_list():
+
+        #Function to create an Ansible dynamic inventory, with hosts pulled down from lama server via API call
+
+        #Collecting API server login information
+        lama_username=input("Enter your lama server username:  ")
+        lama_passwd=getpass.getpass()
+
+        #Defining variables . 
+        api_url='https://lamal1d.np.domain.com/lama-api/hosts?format=json'
+        parameters={"limit":-1}
+
+        #Making an API call to LAMA to get a json payload data within which are the hostnames of registered hosts
+        response=requests.get(api_url, auth=(lama_username, lama_passwd), params=parameters)
+
+        #Converting the json payload into a Python dictionary
+        response=response.json()
+
+        #Forming a list of Python dictionary values using
+        vals=[str(v) for k,v in response.items()]
+
+        #Itemizing the list and then splitting the items into words and storing the results in itemized_list
+        itemized_list=(vals[0] + vals[1] + vals[2] + vals[3]).split()#Inventory creation block of code. Here the code is sorting hosts from list above based on selectors entered
+        #and assigning those hosts to the sap1 group of servers and forming and inventory out of it.
+
+        inventory = {}
+        inventory['sap1'] = {}
+        invent_list=[item.replace("'","") for item in itemized_list if item.endswith("domain.com'") and 'hdb' in item]
+        inventory['sap1']['hosts']=invent_list
+        #Print inventory hosts
+        print(json.dumps(inventory))
+        print("")
+
+get_server_list()
+
+        
+        
+
+

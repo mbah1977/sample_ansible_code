@@ -1,0 +1,57 @@
+---
+# tasks file for os-update
+- name: Status update starting patching job {{ inventory_hostname }}
+  uri:
+    url: '{{ logurl }}?action=update&name={{ inventory_hostname }}&status={{ status }}&group={{ rfc }}'
+  vars:
+    status: "starting-updates_towerjob-{{ tower_job_id }}"
+  delegate_to: localhost
+  become: false
+
+- name: Status update starting patching job {{ inventory_hostname }} (syslog)
+  shell: |
+    echo "ansible-patch[{{ tower_job_id }}] {{ rfc }} {{ status }}" | logger -p info
+  ignore_errors: true
+  vars:
+    status: "starting-updates"
+
+# tasks file for os-update
+
+- name: Log os update start
+  shell: wall "Automated Linux OS Patching Beginning per {{ rfc }}"
+  ignore_errors: true
+
+- name: Log os update on syslog
+  shell: |
+    echo "Automated Linux OS Patching Beginning per RFC: {{ rfc }}" | logger -p info
+  ignore_errors: true
+
+- name: RedHat requirements check
+  include_tasks: 'RedHatOSUpdate.yml'
+  when: ansible_os_family == 'RedHat'
+
+- name: Suse requirements check
+  include_tasks: 'SuseOSUpdate.yml'
+  when: ansible_os_family == 'Suse'
+
+- name: "Report that the host is being rebooted (syslog)"
+  shell: |
+    echo "ansible-patch[{{ tower_job_id }}] {{ rfc }} {{ status }}" | logger -p info
+  ignore_errors: true
+  vars:
+    status: "rebooting"
+
+- name: "report that the host is being rebooted."
+  uri:
+    url: '{{ logurl }}?action=update&name={{ inventory_hostname }}&status={{ status }}&group={{ rfc }}'
+  vars:
+    status: "rebooting_towerjob-{{ tower_job_id }}"
+  delegate_to: localhost
+  become: false
+
+- name: Reboot servers after successful patch
+  reboot:
+    reboot_timeout: 3600
+  
+  
+  :
